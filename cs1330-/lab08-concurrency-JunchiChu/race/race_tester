@@ -1,0 +1,72 @@
+#!/bin/bash
+
+TOTAL_TESTS=10
+TEAM_ONE="Oozma Kappa"
+TEAM_TWO="Roar Omega Roar"
+
+OUTPUT_FILE=output.txt
+EXECUTABLE=./race
+
+check_exit_status () {
+	if [ $? -ne 0 ]; then
+		echo "$1 failed"
+		exit 1
+	fi
+}
+
+make clean
+check_exit_status "clean"
+
+make
+check_exit_status "compile"
+
+team_one_first_leg_wins=0
+team_one_second_leg_wins=0
+
+for i in `seq 1 $TOTAL_TESTS`;
+do
+  "$EXECUTABLE" > "$OUTPUT_FILE"
+  check_exit_status "executing $EXECUTABLE"
+
+  echo -en "TEST $i: "
+
+  # check which racer won each leg
+  sed '1!d' "$OUTPUT_FILE" | grep "$TEAM_ONE" &>/dev/null
+  if [ $? -eq 0 ]; then
+	team_one_first_leg_wins=$((team_one_first_leg_wins+1))
+	echo -en "$TEAM_ONE "
+  else
+	echo -en "$TEAM_TWO "
+  fi
+
+  sed '3!d' "$OUTPUT_FILE" | grep "$TEAM_ONE" &>/dev/null
+  if [ $? -eq 0 ]; then
+	team_one_second_leg_wins=$((team_one_second_leg_wins+1))
+  	echo $TEAM_ONE
+  else
+	echo $TEAM_TWO
+  fi
+
+  rm "$OUTPUT_FILE"
+done
+
+if [ $team_one_first_leg_wins -eq 0 ]; then
+	echo "FAILED: $TEAM_TWO won all the first legs"
+	exit 1
+fi
+
+if [ $team_one_second_leg_wins -eq 0 ]; then
+	echo "FAILED: $TEAM_TWO won all the second legs"
+	exit 1
+fi
+
+if [ $team_one_first_leg_wins -eq $TOTAL_TESTS ]; then
+	echo "FAILED: $TEAM_ONE won all the first legs"
+	exit 1
+fi
+
+if [ $team_one_second_leg_wins -eq $TOTAL_TESTS ]; then
+	echo "FAILED: $TEAM_ONE won all the second legs"
+	exit 1
+fi
+exit 0

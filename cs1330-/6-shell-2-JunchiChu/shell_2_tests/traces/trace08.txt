@@ -1,0 +1,9 @@
+#
+# trace08.txt - Forward SIGQUIT to foreground job.
+#
+/bin/echo  $SUITE/programs/delayed_echo 4 do not print
+$SUITE/programs/delayed_echo 4 do not print
+
+SLEEP 2
+QUIT
+SLEEP 3

@@ -1,0 +1,26 @@
+(gdb) p /x $rip
+$6 = 0x4014b5
+(gdb) p /x $rsp
+$7 = 0x557833e0
+(gdb) p /x $rbp
+$8 = 0x55783400
+(gdb)
+
+ 0x7580808070707060
+(gdb) p /x $rsp
+$4 = 0x557833e0
+(gdb) p /x $rbp
+$9 = 0x5050404040303030
+
+0x557833d4 <_reserved+2085844>: 1212170045
+(gdb) p /x *(unsigned *) $rbp-0x4
+$4 = 0x3030302c
+(gdb) p/x *(unsigned *) $eax
+Cannot access memory at address 0x48484847
+  0x4071e0,%eax  
+
+0x3419ffdf
+
+14 / 10 
+18 / 14 
+17 / 13 

@@ -1,0 +1,10 @@
+#
+# trace24.txt - background jobs print status messages at termination
+#
+
+$SUITE/programs/exit_status 2 0 &
+$SUITE/programs/exit_status 2 1 &
+$SUITE/programs/exit_status 2 9 &
+
+SLEEP 3
+BLANK

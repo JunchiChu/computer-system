@@ -1,0 +1,9 @@
+#!/bin/bash
+
+/bin/ls > $1/output
+/usr/bin/banner cs0330 shell 1 system test >> $1/output
+/usr/bin/cal | xargs banner >> $1/output
+/usr/bin/cal >> $1/output
+echo cs0330 shell 1 system test >> $1/output
+/usr/bin/banner appending >> $1/output
+echo cs0330 shell 1 >> $1/output

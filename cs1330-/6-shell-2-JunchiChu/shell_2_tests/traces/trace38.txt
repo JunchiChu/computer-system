@@ -1,0 +1,19 @@
+#
+# trace38.txt - Process fg builtin command. 
+#
+$SUITE/programs/myspin 4 &
+
+SLEEP 1
+jobs
+
+fg %1
+
+SLEEP 1
+TSTP
+
+jobs
+
+fg %1
+
+jobs
+

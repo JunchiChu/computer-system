@@ -1,0 +1,9 @@
+#
+# trace04.txt - Forward SIGINT to foreground job.
+#
+/bin/echo  $SUITE/programs/delayed_echo 4 do not print
+$SUITE/programs/delayed_echo 4 do not print
+
+SLEEP 2
+INT
+SLEEP 3

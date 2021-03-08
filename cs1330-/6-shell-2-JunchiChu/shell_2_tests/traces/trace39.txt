@@ -1,0 +1,15 @@
+#
+# trace39.txt - fg resumes only target job. The shell terminates all background processes on receiving an EOF.
+#
+
+$SUITE/programs/delayed_echo 3 hello
+TSTP
+
+$SUITE/programs/delayed_echo 3 goodbye
+TSTP
+
+$SUITE/programs/delayed_echo 10 how are you &
+
+jobs
+
+fg %1

@@ -1,0 +1,17 @@
+#
+# trace13.txt - Process jobs builtin command.
+#
+/bin/echo jobs
+jobs
+
+/bin/echo $SUITE/programs/myspin 4 [bg]
+$SUITE/programs/myspin 4 &
+
+/bin/echo jobs
+jobs
+
+/bin/echo $SUITE/programs/myspin 3 [bg]
+$SUITE/programs/myspin 3 &
+
+/bin/echo jobs
+jobs

@@ -1,0 +1,13 @@
+#
+# trace42.txt - waitpid after "fg", sigcont_ignore
+#
+
+$SUITE/programs/sigcont_ignore
+TSTP
+jobs
+
+SLEEP 1
+fg %1
+jobs
+fg %1
+jobs

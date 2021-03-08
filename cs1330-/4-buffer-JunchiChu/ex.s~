@@ -1,0 +1,6 @@
+movl $0x3419ffdf, 0x4071e0 # Add 17 to %eax	
+push $0x4014b5
+ret
+	
+	
+	

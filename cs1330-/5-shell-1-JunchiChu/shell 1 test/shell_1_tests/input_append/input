@@ -1,0 +1,2 @@
+/usr/bin/figlet -L >> redirect.txt < othello.txt -p
+/bin/cat redirect.txt

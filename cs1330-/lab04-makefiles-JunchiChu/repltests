@@ -1,0 +1,53 @@
+#!/bin/bash
+
+QUIET_REPL=$1
+LOUD_REPL=$2
+
+# Check that both repl files exist
+
+if ! [ -f "$QUIET_REPL" ]
+then
+    echo "No quiet repl specified"
+fi
+
+if ! [ -f "$LOUD_REPL" ]
+then
+    echo "No loud repl specified"
+fi
+
+# Test case for the quiet repl
+
+"./$QUIET_REPL" > quiet_out.txt << 'EOF'
+asdf asdf
+AsDf aSdF
+EOF
+
+quiet_output=$(<quiet_out.txt)
+
+if [ "$quiet_output" == $'Shout: Asdf Asdf\n\nWhisper: asdf asdf' ]
+then
+    echo "All tests for quiet repl passed!"
+else
+    echo "Tests for quiet repl failed!"
+fi
+
+rm -f quiet_out.txt
+
+
+# Test case for the loud repl
+
+"./$LOUD_REPL" > loud_out.txt << 'EOF'
+asdf asdf
+AsDf aSdF
+EOF
+
+loud_output=$(<loud_out.txt)
+
+if [ "$loud_output" == $'Shout: ASDF ASDF\n\nWhisper: asdf asdf' ]
+then
+    echo "All tests for loud repl passed!"
+else
+    echo "Tests for loud repl failed!"
+fi
+
+rm -f loud_out.txt

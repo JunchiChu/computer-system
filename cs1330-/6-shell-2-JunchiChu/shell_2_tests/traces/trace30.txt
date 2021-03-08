@@ -1,0 +1,11 @@
+#
+# trace30.txt - ensures that jobs terminated by SIGINT in the
+#               background are cleaned up and have the change reported
+#               in the job list
+#
+
+$SUITE/programs/33sh_to_file /dev/null $SUITE/programs/sigint_n 2 &
+jobs
+SLEEP 3
+BLANK
+jobs

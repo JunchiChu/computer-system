@@ -1,0 +1,429 @@
+Name: Junchi Chu
+my cs login: jchu27 
+
+My partner cs login: jtan26 
+
+
+
+
+
+ __ _ _      _
+ / _(_) | ___/ |
+| |_| | |/ _ \ |
+|  _| | |  __/ |
+|_| |_|_|\___|_|
+
+Write down the steps in GDB you took to find the bug(s)!
+
+Steps:
+make all clean
+gdb file1
+b mergesort_helper //set a gdb breakpoint at mergesort_helper
+r hello //our input string is hello
+n
+n
+n
+n
+....
+
+
+
+
+the first bug I found:
+
+Breakpoint 1, mergesort_helper (str=0x7fffffffe787 "hello",
+    scratch=0x7fffffffe3d0 "", low=0, high=5) at file1.c:95
+95            middle = (high - low) / 2 + low;
+(gdb) n
+96            mergesort_helper(str, scratch, low, middle);
+(gdb)
+
+Breakpoint 1, mergesort_helper (str=0x7fffffffe787 "hello",
+    scratch=0x7fffffffe3d0 "", low=0, high=2) at file1.c:95
+95            middle = (high - low) / 2 + low;
+(gdb)
+96            mergesort_helper(str, scratch, low, middle);
+(gdb)
+
+Breakpoint 1, mergesort_helper (str=0x7fffffffe787 "hello",
+    scratch=0x7fffffffe3d0 "", low=0, high=1) at file1.c:95
+95            middle = (high - low) / 2 + low;
+(gdb)
+96            mergesort_helper(str, scratch, low, middle);
+(gdb)
+
+Breakpoint 1, mergesort_helper (str=0x7fffffffe787 "hello",
+    scratch=0x7fffffffe3d0 "", low=0, high=0) at file1.c:95
+95            middle = (high - low) / 2 + low;
+(gdb)
+96            mergesort_helper(str, scratch, low, middle);
+(gdb)
+
+Breakpoint 1, mergesort_helper (str=0x7fffffffe787 "hello",
+    scratch=0x7fffffffe3d0 "", low=0, high=0) at file1.c:95
+95            middle = (high - low) / 2 + low;
+...
+
+when low and high are both 0, the recusion goes to infinity. 
+That's the reason for the segmentation error. 
+
+To fix the program, 
+add an "if" condition in mergesort_helper: if (low<high). So this 
+if checking condition will handle case when low and high are both 0
+and return the expected output. 
+
+
+
+
+
+The second bug I found:
+
+
+(gdb) b mergesort_helper
+Breakpoint 1 at 0x8ef: file file1.c, line 95.
+(gdb) r fdgf
+Starting program: /vagrant/lab01-tools-JunchiChu/file1 fdgf
+
+Breakpoint 1, mergesort_helper (str=0x7fffffffe787 "fdgf", scratch=0x7fffffffe3d0 "", low=0, high=4) at file1.c:95
+95          if (low < high ){
+(gdb) n
+96            middle = (high - low) / 2 + low;
+(gdb)
+97            mergesort_helper(str, scratch, low, middle);
+(gdb)
+
+Breakpoint 1, mergesort_helper (str=0x7fffffffe787 "fdgf", scratch=0x7fffffffe3d0 "", low=0, high=2) at file1.c:95
+95          if (low < high ){
+(gdb)
+96            middle = (high - low) / 2 + low;
+(gdb)
+97            mergesort_helper(str, scratch, low, middle);
+(gdb)
+
+Breakpoint 1, mergesort_helper (str=0x7fffffffe787 "fdgf", scratch=0x7fffffffe3d0 "", low=0, high=1) at file1.c:95
+95          if (low < high ){
+(gdb)
+96            middle = (high - low) / 2 + low;
+(gdb)
+97            mergesort_helper(str, scratch, low, middle);
+(gdb)
+
+Breakpoint 1, mergesort_helper (str=0x7fffffffe787 "fdgf", scratch=0x7fffffffe3d0 "", low=0, high=0) at file1.c:95
+95          if (low < high ){
+(gdb)
+101         }
+(gdb)
+mergesort_helper (str=0x7fffffffe787 "fdgf", scratch=0x7fffffffe3d0 "", low=0, high=1) at file1.c:98
+98            mergesort_helper(str, scratch, middle, high);
+(gdb) p middle
+$1 = 0
+(gdb) p high
+$2 = 1
+(gdb) n
+
+Breakpoint 1, mergesort_helper (str=0x7fffffffe787 "fdgf", scratch=0x7fffffffe3d0 "", low=0, high=1) at file1.c:95
+95          if (low < high ){
+(gdb)
+96            middle = (high - low) / 2 + low;
+(gdb) p middle
+$3 = 0
+(gdb) n
+97            mergesort_helper(str, scratch, low, middle);
+(gdb)
+
+Breakpoint 1, mergesort_helper (str=0x7fffffffe787 "fdgf", scratch=0x7fffffffe3d0 "", low=0, high=0) at file1.c:95
+95          if (low < high ){
+(gdb) n
+101         }
+(gdb)
+mergesort_helper (str=0x7fffffffe787 "fdgf", scratch=0x7fffffffe3d0 "", low=0, high=1) at file1.c:98
+98            mergesort_helper(str, scratch, middle, high);
+(gdb)
+
+Breakpoint 1, mergesort_helper (str=0x7fffffffe787 "fdgf", scratch=0x7fffffffe3d0 "", low=0, high=1) at file1.c:95
+95          if (low < high ){
+(gdb)
+96            middle = (high - low) / 2 + low;
+(gdb)
+97            mergesort_helper(str, scratch, low, middle);
+(gdb)
+
+Breakpoint 1, mergesort_helper (str=0x7fffffffe787 "fdgf", scratch=0x7fffffffe3d0 "", low=0, high=0) at file1.c:95
+95          if (low < high ){
+(gdb)
+
+Explanation: 
+
+In fact, I need to change mergesort_helper(str, scratch, middle, high); to mergesort_helper(str, scratch, middle+1, high); 
+That is because we should sort the second half of the list, and "middle" has been sorted in the previous line of code.
+That's why we must do middle+1 to avoid a infinity loop call.
+
+I print the value of middle, and high...
+if low = 0 = high, the program will exit and go to where low = 0 high =1;
+and then we set middle = (high - low) / 2 + low; which is 0 again. So the next call 
+mergesort_helper(str, scratch, low, middle); and then it will again go to 
+where low =0 and high =1.......this is causing us an infinity loop problem!
+
+To fix the bug, change mergesort_helper(str, scratch, middle, high); to mergesort_helper(str, scratch, middle+1, high); 
+
+  __ _ _      ____
+ / _(_) | ___|___ \
+| |_| | |/ _ \ __) |
+|  _| | |  __// __/
+|_| |_|_|\___|_____|
+
+Write down the steps in GDB you took to find the bug(s)!
+
+Steps:
+gdb file2
+(gdb) b main
+Breakpoint 2 at 0x5555555547ac: file file2.c, line 9.
+(gdb) r 99 88 77
+The program being debugged has been started already.
+Start it from the beginning? (y or n) y
+Starting program: /vagrant/lab01-tools-JunchiChu/file2 99 88 77
+
+Breakpoint 2, main (argc=4, argv=0x7fffffffe508) at file2.c:9
+9       int main(int argc, char** argv) {
+(gdb) n
+13          if (argc == 1) {
+(gdb) n
+17          for (i = 1; i < argc; i++) {
+(gdb) n
+18              n = atoi(argv[i]);
+(gdb) n
+19              ret_addr = incr(&n);
+(gdb) s
+incr (n=0x7fffffffe408) at file2.c:8
+8       int* incr(int* n) {return ++n;}
+(gdb) p n
+$1 = (int *) 0x7fffffffe408
+(gdb) n
+main (argc=4, argv=0x7fffffffe508) at file2.c:20
+20              printf("%i ", *ret_addr);
+(gdb) p ret_addr
+$2 = (int *) 0x7fffffffe40c
+(gdb) p *ret_addr
+$3 = 1
+
+My input is 99 88 77. The address of first input should be
+ (int *) 0x7fffffffe408, and then I pass it to incr function
+However, ++n add value to the address of my first input instead 
+of the value itself, so when I print ret_addr, it is (int *) 0x7fffffffe40c
+,which is the next pointer position. I print the value of the address
+(int *) 0x7fffffffe40c, which is 1. Here I found the problem.
+
+To fix the problem, we should increment a value pointed to by some pointer
+instead of mistakenly increment the pointer itself.
+
+
+
+
+  __ _ _      _____
+ / _(_) | ___|___ /
+| |_| | |/ _ \ |_ \
+|  _| | |  __/___) |
+|_| |_|_|\___|____/
+
+Write down the steps in GDB you took to find the bug(s)!
+
+Bug 1:
+
+if the command is 0:
+
+(gdb) b check
+Breakpoint 1 at 0x7cb: file file3.c, line 31.
+(gdb) r 0 hel leh
+Starting program: /vagrant/lab01-tools-JunchiChu/file3 0 hel leh
+
+Breakpoint 1, check (name=0x7fffffffe789 "leh", name2=0x7fffffffe785 "hel")
+    at file3.c:31
+31          for (c = name; *c != '0'; ++c)
+(gdb) n
+32              if (function1(*c, name2) == 0) return 0;
+(gdb) p c
+$1 = 0x7fffffffe789 "leh"
+(gdb) n
+31          for (c = name; *c != '0'; ++c)
+(gdb) n
+32              if (function1(*c, name2) == 0) return 0;
+(gdb) p c
+$2 = 0x7fffffffe78a "eh"
+(gdb) n
+31          for (c = name; *c != '0'; ++c)
+(gdb) p c
+$3 = 0x7fffffffe78a "eh"
+(gdb) n
+32              if (function1(*c, name2) == 0) return 0;
+(gdb)  p c
+$4 = 0x7fffffffe78b "h"
+(gdb) n
+31          for (c = name; *c != '0'; ++c)
+(gdb) p c
+$5 = 0x7fffffffe78b "h"
+(gdb) n
+32              if (function1(*c, name2) == 0) return 0;
+(gdb)  p c
+$6 = 0x7fffffffe78c ""
+(gdb) n
+31          for (c = name; *c != '0'; ++c)
+(gdb) p c
+$7 = 0x7fffffffe78c ""
+(gdb) n
+32              if (function1(*c, name2) == 0) return 0;
+(gdb)  p c
+$8 = 0x7fffffffe78d "LS_COLORS=rs=0:di=01;34:ln=01;36:mh=00:pi=4
+0;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;4
+1:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc"...
+
+The problem is the line *c != '0' and  s[i] != '0'. In fact, checking the end of string 
+should be '\0'. When the for loop supposed to be ended but instead didn't, the problem occurs.
+It is clearly after iterating the for loop, we messed up the value of c. 
+To fix the problem, change '0' to '\0'.
+
+
+
+Bug 2:
+
+If the command is 1:
+
+
+(gdb) b perm 
+Breakpoint 1, perm (str=0x7fffffffe789 "hey", len=3) at file3.c:47
+(gdb) r 1 hey
+47          char c = str[0];
+(gdb) n
+49          if (len == 0) {
+(gdb) p str
+$6 = 0x7fffffffe789 "hey"
+(gdb) n
+52              idx = rand() % (len + 2);
+(gdb) n
+53              str[idx] = c;
+(gdb) p idx
+$7 = 3
+(gdb) p str
+$8 = 0x7fffffffe789 "hey"
+(gdb) n
+54              str[0] = str[idx];
+(gdb) p str
+$9 = 0x7fffffffe789 "heyhLS_COLORS=rs=0:di=01;34:ln=01;36:mh=00:pi=40;
+33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;
+41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*"...
+
+
+The input is 1 hey. We expect to have yeh..but the output is messy. The problem is when we 
+set index to random number, the value of index is out of bound. The length of string is 3,
+but p idx is 3. When I execute str[idx]=c, the string was messed up.
+To fix to problem, we 
+change line idx = rand() % (len+2 ); to idx = rand() % (len );
+
+
+
+Bug3:
+
+Breakpoint 1, perm (str=0x7fffffffe789 "hey", len=3)
+    at file3.c:47
+47          char c = str[0];
+(gdb) n
+49          if (len == 0) {
+(gdb)
+52              idx = rand() % (len );
+(gdb)
+53              str[idx] = c;
+(gdb) p c
+$1 = 104 'h'
+(gdb) p str
+$2 = 0x7fffffffe789 "hey"
+(gdb) n
+54              str[0] = str[idx];
+(gdb) n
+56              return perm(str + 1, len - 1) - 1;
+(gdb) p str
+$3 = 0x7fffffffe789 "hhy"
+(gdb) p idx
+
+
+
+In gdb, the idx is 1. We set c='h' to str[idx] and then we change 
+the original string to "hhy", which is incorrect. Because we should 
+store str[idx] in str and then we store c in str[idx], otherwise we 
+have a overwrting char problem.
+
+To fix this problem,
+swap str[idx] = c and str[0] = str[idx]. 
+
+
+
+
+  __ _ _      _  _
+ / _(_) | ___| || |
+| |_| | |/ _ \ || |_
+|  _| | |  __/__   _|
+|_| |_|_|\___|  |_|
+
+
+Write down the steps in GDB you took to find the bug(s) OR go to TA hours and debug it live!
+
+(gdb) r 4 5 6 7
+The program being debugged has been started already.
+Start it from the beginning? (y or n) y
+Starting program: /vagrant/lab01-tools-JunchiChu/file4 4 5 6 7
+
+Breakpoint 1, edit_thing (x=0x7fffffffe360, y=2) at file4.c:11
+11      void edit_thing(int **x, int y) { *(x + y) = 0; }
+(gdb) p x
+$1 = (int **) 0x7fffffffe360
+(gdb) p *x
+$2 = (int *) 0x7fffffffe390
+(gdb) p **x
+$3 = 4
+(gdb) p **(x+1)
+$10 = 5
+(gdb) p **(x+2)
+$11 = 6
+(gdb) p **(x+3)
+$12 = 7
+(gdb) p **(x+4)
+Cannot access memory at address 0xffffffff
+(gdb) p y
+$13 = 2
+(gdb) p *(x+y)
+$14 = (int *) 0x7fffffffe398
+(gdb) p *(x+0)
+$15 = (int *) 0x7fffffffe390
+(gdb) p *(x+1)
+$16 = (int *) 0x7fffffffe394
+(gdb) p *(x+2)
+$17 = (int *) 0x7fffffffe398
+(gdb) p *(x+3)
+$18 = (int *) 0x7fffffffe39c
+(gdb) n
+vector_sum_pointers_last_three (sz=4, vector_pointers=0x7fffffffe360)
+    at file4.c:30
+30          sum = 0;
+(gdb) p vector_pointers
+$19 = (int **) 0x7fffffffe360
+(gdb) p *vector_pointers
+$20 = (int *) 0x7fffffffe390
+(gdb) p **vector_pointers
+$21 = 4
+(gdb) p **(vector_pointers+1)
+$22 = 5
+(gdb) p **(vector_pointers+2)
+Cannot access memory at address 0x0
+(gdb) p **(vector_pointers+3)
+$23 = 7
+(gdb) p *(vector_pointers+3)
+$24 = (int *) 0x7fffffffe39c
+(gdb) p *(vector_pointers+2)
+$25 = (int *) 0x0
+
+The input is 4,5,6,7. The function edit_thing mess up our pointer address.
+It is clearly can be seen in the above gdb commands that when *(x+y)=0, 
+where x is the first element of vector and y is 2. *(x+2)=0 means the value "6"'s address is changed to 0.
+Since the address of the third element is lost in the vector pointer, that should tell where the segmentation fault coming from.
+
+
+
+

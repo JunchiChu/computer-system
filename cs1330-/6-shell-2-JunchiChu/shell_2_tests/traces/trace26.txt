@@ -1,0 +1,10 @@
+#
+# trace26.txt - programs suspended by non-SIGTSTP signals have
+#               the proper signal recorded
+#
+
+$SUITE/programs/33sh_to_file /dev/null $SUITE/programs/sigstop_n 1
+
+SLEEP 2
+
+/bin/echo a message "suspended by signal 19" should have printed

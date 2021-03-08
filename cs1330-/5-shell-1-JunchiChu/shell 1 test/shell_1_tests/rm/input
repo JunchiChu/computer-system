@@ -1,0 +1,4 @@
+/bin/touch 33tmp_file.txt
+./exist_script
+rm 33tmp_file.txt
+./exist_script

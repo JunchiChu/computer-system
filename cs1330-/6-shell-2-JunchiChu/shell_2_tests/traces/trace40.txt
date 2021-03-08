@@ -1,0 +1,26 @@
+#
+# trace40.txt - fg restarts every stopped process in process group
+#
+$SUITE/programs/mysplit 4
+
+SLEEP 2
+TSTP
+
+jobs
+
+SLEEP 1
+
+/bin/echo /bin/ps -o pid,tty,stat,time,command
+SLEEP 2
+/bin/ps -o pid,tty,stat,time,command
+
+/bin/echo fg %1
+SLEEP 1
+fg %1
+
+/bin/echo /bin/ps -o pid,tty,stat,time,command
+SLEEP 4
+/bin/ps -o pid,tty,stat,time,command
+
+
+

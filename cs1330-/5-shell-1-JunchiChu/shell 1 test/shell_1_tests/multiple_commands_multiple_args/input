@@ -1,0 +1,8 @@
+/bin/rm -r -f shell_test
+/bin/mkdir shell_test
+cd shell_test
+/bin/mkdir shell_test_2
+/bin/ls
+/bin/rm -r -f shell_test_2
+/bin/echo cs0330 shell > tmp_out.txt
+/bin/cat tmp_out.txt

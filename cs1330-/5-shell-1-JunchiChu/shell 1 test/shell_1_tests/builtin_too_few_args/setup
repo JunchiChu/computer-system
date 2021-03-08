@@ -1,0 +1,6 @@
+#!/bin/bash
+ERR="cd: syntax error"
+
+/bin/pwd > $1/output
+echo $ERR > $1/error 
+/bin/pwd >> $1/output

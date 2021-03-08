@@ -1,0 +1,13 @@
+#
+# trace35.txt - simple bg test
+#
+
+$SUITE/programs/delayed_echo 4 hello
+
+SLEEP 2
+TSTP
+SLEEP 1
+
+bg %1
+$SUITE/programs/delayed_echo 3 goodbye
+SLEEP 4

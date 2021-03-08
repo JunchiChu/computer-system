@@ -1,0 +1,24 @@
+Below are descriptions of each of the programs within this directory.
+=====================================================================
+myint:                  waits atoi(argv[1]) seconds and then sends itself SIGINT.
+mystop:                 waits atoi(argv[1]) seconds and then sends itself SIGTSTP.
+mysplit:                forks a child that spins for atoi(argv[1]) seconds and waits for it to exit.
+myspin:                 waits atoi(argv[1]) seconds and then exits normally.
+mypid:                  prints its pid and then optionally waits atoi(argv[1]) seconds before exiting.
+delayed_echo:           waits atoi(argv[1]) seconds and then echoes remaining arguments.
+segfault:               immediately segfaults.
+mixup:                  mixes up responses to signals by sleeping on SIGINT/QUIT and dying on SIGTSTP.
+exit_status:            waits atoi(argv[1]) seconds and then exits with stats atoi(argv[2]).
+delay:                  waits atoi(argv[1]) seconds and then executes argv[2].
+check_process_state:    reads process ids and prints the state of the corresponding process.
+33sh_to_file:           redirects stdout of the program at argv[2] to the file at argv[1].
+33sh_append_file:       appends stdout of the program at argv[2] to the file at argv[1].
+33sh_pipe:              chains stdout of the program at argv[1] to the stdin of the program at argv[-TO- + 1].
+sigint_n:               writes its pid, optionally sleeps atoi(argv[1]) seconds, then sends itself SIGINT.
+sigcont_n:              forks off a child, stops itself, waits for the child to restart it, then sleeps a bit.
+sigtstp_n:              writes its pid, optionally sleeps atoi(argv[1]) seconds, then sends itself SIGTSTP.
+sigstop_n:              writes its pid, optionally sleeps atoi(argv[1]) seconds, then sends itself SIGSTOP.
+sigcont_ignore:         loops until it is stopped by a signal, then re-sends SIGSTP to itself instead of restarting.
+sigint_ignore:          loops forever and refuses to be terminated by SIGINT.
+sigint_replace:         responds to SIGINT by stopping instead of dying (by sending itself SIGTSTP).
+sigtstp_replace:        responds to SIGTSTP by dying instead of stopping (by sending itself SIGINT).

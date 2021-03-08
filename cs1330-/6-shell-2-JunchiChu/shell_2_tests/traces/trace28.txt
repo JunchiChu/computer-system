@@ -1,0 +1,14 @@
+#
+# trace28.txt - background jobs print status messages at termination
+#
+
+$SUITE/programs/exit_status 2 0 &
+$SUITE/programs/exit_status 2 1 &
+$SUITE/programs/exit_status 2 9 &
+
+/bin/echo Jobs:
+jobs
+SLEEP 3
+BLANK
+/bin/echo Jobs:
+jobs

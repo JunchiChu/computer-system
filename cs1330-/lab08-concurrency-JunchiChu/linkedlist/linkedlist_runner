@@ -1,0 +1,52 @@
+#!/bin/bash
+
+LL_CHECKER=./linkedlist_checker.py
+
+OPS_FILE=op_output.txt
+LIST_FILE=list_output.txt
+
+SEQUENTIAL_EXEC=./sequential
+RANDOM_EXEC=./random
+EXECS=( $SEQUENTIAL_EXEC $RANDOM_EXEC )
+
+check_exit_status () {
+	if [ $? -ne 0 ]; then
+		echo "$1 failed"
+		exit 1
+	fi
+}
+
+
+make clean
+check_exit_status "clean"
+
+make
+check_exit_status "compile"
+
+failed=0
+
+for exec in "${EXECS[@]}"
+do
+	for i in `seq 1 20`;
+	do
+	  # do not check exit status because do not exist at first, also if it doesn't work should still get overwritten
+
+	  "$exec" $i $i >$LIST_FILE 2>$OPS_FILE
+	  check_exit_status "executing $exec"
+
+	  echo -en "TEST $i ($exec $i $i): "
+
+	  # check forked output is proper
+	  python3 $LL_CHECKER --ops_file=$OPS_FILE --final_list=$LIST_FILE
+
+	  if [ $? -ne 0 ]; then
+	    echo "*FAILED: Output of $exec is not proper"
+	    failed=1
+	  else
+	    echo "PASSED CHECK!"
+	  fi
+
+	  rm "$OPS_FILE" "$LIST_FILE"
+	done
+done
+exit $failed

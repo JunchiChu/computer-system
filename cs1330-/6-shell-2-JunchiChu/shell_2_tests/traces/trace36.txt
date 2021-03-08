@@ -1,0 +1,23 @@
+#
+# trace36.txt - bg resumes only target job
+#
+/bin/echo $SUITE/programs/delayed_echo 5 hello
+$SUITE/programs/delayed_echo 5 hello
+SLEEP 1
+TSTP
+
+/bin/echo $SUITE/programs/delayed_echo 5 goodbye
+$SUITE/programs/delayed_echo 5 goodbye
+
+SLEEP 2
+TSTP
+
+/bin/echo bg 4
+bg %4
+
+SLEEP 4
+
+/bin/echo bg 2
+bg %2
+
+SLEEP 4

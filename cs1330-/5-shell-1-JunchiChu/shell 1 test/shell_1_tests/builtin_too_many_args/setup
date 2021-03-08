@@ -1,0 +1,5 @@
+#!/bin/bash
+
+/bin/pwd > $1/output
+cd ../
+/bin/pwd >> $1/output

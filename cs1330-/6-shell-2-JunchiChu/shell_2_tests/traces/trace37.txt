@@ -1,0 +1,23 @@
+#
+# trace37.txt - bg restarts every stopped process in process group
+#
+$SUITE/programs/mysplit 4
+
+SLEEP 2
+TSTP
+
+jobs
+
+SLEEP 3
+
+/bin/echo /bin/ps -o pid,tty,stat,time,command
+/bin/ps -o pid,tty,stat,time,command
+
+/bin/echo bg %1
+bg %1
+BLANK
+
+SLEEP 3
+BLANK
+/bin/echo /bin/ps -o pid,tty,stat,time,command
+/bin/ps -o pid,tty,stat,time,command

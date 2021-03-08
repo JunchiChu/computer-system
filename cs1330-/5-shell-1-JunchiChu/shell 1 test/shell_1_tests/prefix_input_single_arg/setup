@@ -1,0 +1,14 @@
+#!/bin/bash
+
+cat > redirect.txt << "EOF"
+cs0330 word count tests
+counts the number of lines
+and not the number of words
+because it uses the -l option
+on the command line.
+Thus, the expected output
+for this test
+is only the number
+9.
+EOF
+

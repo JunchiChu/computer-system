@@ -1,0 +1,579 @@
+#!/usr/bin/env python3.8
+import argparse
+import os
+import re
+import sys
+import pathlib
+import time
+import subprocess
+import signal
+import threading
+import ctypes
+import tempfile
+from colors import color
+from collections import namedtuple
+from typing import Optional, List, Union, Dict, Tuple
+from dataclasses import dataclass
+
+libc = ctypes.CDLL("libc.so.6")
+TraceProcessResult = namedtuple(
+    "TraceProcessResult", ["timedout", "stdout", "stderr", "proc"]
+)
+
+# keys: shell type, values: shell demo file names
+SHELL_DICT = {
+    "TA_SHELL2_DEMO_NAME": "cs0330_shell_2_demo",
+    "STUDENT_SHELL_PATH": "",
+    "STUDENT_SHELL_NAME": "",
+}
+
+PASS_MSG = color("PASS", fg="green")
+FAIL_MSG = color("FAIL", fg="red")
+
+
+class TraceInstruction:
+    def run(self, shell_proc):
+        pass
+
+
+class SignalInstruction(TraceInstruction):
+
+    signal_to_char_code = {
+        signal.SIGINT: "!c",
+        signal.SIGSTOP: "!z",
+        signal.SIGQUIT: "!\\",
+    }
+
+    def __init__(self, signal):
+        self.signal = signal
+
+    def run(self, shell_proc):
+        shell_proc.stdin.write(
+            (
+                SignalInstruction.signal_to_char_code.get(self.signal, "") + "\r\n"
+            ).encode()
+        )
+        # TODO: for some reason commenting out the flush makes it work on Vagrant
+        shell_proc.stdin.flush()
+
+    def __str__(self):
+        return f"<Signal {self.signal}>"
+
+    def __repr__(self):
+        return str(self)
+
+
+class SleepInstruction(TraceInstruction):
+    def __init__(self, s):
+        self.s = s
+
+    def run(self, shell_proc):
+        time.sleep(self.s)
+
+    def __str__(self):
+        return f"<Sleep {self.s}>"
+
+    def __repr__(self):
+        return str(self)
+
+
+class StdinInstruction(TraceInstruction):
+    def __init__(self, line):
+        self.line = line
+
+    def run(self, shell_proc):
+        # print("sent line: " + self.line)
+        shell_proc.stdin.write((self.line + "\r\n").encode())
+        shell_proc.stdin.flush()
+
+    def __str__(self):
+        return f'<Line: "{self.line}">'
+
+    def __repr__(self):
+        return str(self)
+
+
+def resolve_symbols(line, args):
+    if args.suite[-1] == "/":
+        path = args.suite[:-1]
+    else:
+        path = args.suite
+
+    pp = pathlib.Path(path)
+    return line.replace("$SUITE", str(pp.resolve()))
+
+
+def parse_trace_file(path: str, args) -> Tuple[List[TraceInstruction], bool]:
+    instructions = []
+    is_sequential = False
+
+    with open(path, "r") as file:
+        lines = file.readlines()
+        lines = [resolve_symbols(line, args) for line in lines]
+
+        for line in lines:
+            line = line.rstrip()
+            if line.startswith("#"):
+                continue
+
+            line_tokens = line.split(" ")
+            for token in line_tokens:
+                if token == "/bin/ps":
+                    is_sequential = True
+                    break
+
+            slp = re.findall("SLEEP (\d+)", line)
+            if len(slp) > 0:
+                instructions.append(SleepInstruction(int(slp[0])))
+            elif line == "INT":
+                instructions.append(SignalInstruction(signal.SIGINT))
+            elif line == "TSTP":
+                instructions.append(SignalInstruction(signal.SIGSTOP))
+            elif line == "QUIT":
+                instructions.append(SignalInstruction(signal.SIGQUIT))
+            elif line == "BLANK":
+                instructions.append(StdinInstruction(""))
+            else:
+                instructions.append(StdinInstruction(line))
+
+    return lines, instructions, is_sequential
+
+
+def get_line_len_str(s):
+    if not len(s):
+        return ""
+
+    l = len(s.splitlines())
+    return f" ({l} line{'s' if locals != 1 else ''})"
+
+
+@dataclass
+class TraceResult:
+    passed: Optional[bool] = False
+    trace: Optional["Trace"] = None
+    trace_input: Optional[str] = None
+    ta_result: Optional[TraceProcessResult] = None
+    student_result: Optional[TraceProcessResult] = None
+
+    section_titles = {
+        "TRACE": "Trace Input",
+        "DEMO": "Demo Output",
+        "STUDENT": "Student Output",
+        "VERDICT": "Verdict",
+    }
+
+    def get_ta_output(self):
+        return self.ta_result.stdout.decode()
+
+    def get_student_output(self):
+        return self.student_result.stdout.decode()
+
+    def get_output_line_len(self, section_type):
+        if section_type == "STUDENT":
+            return get_line_len_str(self.get_student_output())
+        elif section_type == "DEMO":
+            return get_line_len_str(self.get_ta_output())
+        else:
+            return ""
+
+    def create_report_section(self, section_type):
+        title = self.section_titles[section_type]
+        line_len = self.get_output_line_len(section_type)
+        section = color(f"{title}:{line_len}\n", style="bold+underline")
+
+        if section_type == "TRACE":
+            section += "".join(self.trace.lines)
+        elif section_type == "DEMO":
+            section += "".join(self.get_ta_output())
+        elif section_type == "STUDENT":
+            section += "".join(self.get_student_output())
+        elif section_type == "VERDICT":
+            section += self.get_verdict()
+
+        section += "\n"
+        return section
+
+    def get_verbose_report(self):
+        output = ""
+        for section in self.section_titles.keys():
+            output += self.create_report_section(section)
+
+        return output
+
+    def get_verdict(self, file=sys.stdout):
+        return PASS_MSG if self.passed else FAIL_MSG
+
+    def get_report(self, verbose=False):
+        if verbose:
+            print(self.get_verbose_report())
+        else:
+            print(self.get_verdict())
+
+
+def regex_match(regex, a, b):
+
+    if isinstance(regex, str):
+        regex = (regex,)
+
+    for r in regex:
+        asearch = re.search(r, a)
+        bsearch = re.search(r, b)
+
+        if asearch is None and bsearch is None:
+            continue
+
+        if asearch is None or bsearch is None:
+            return False
+
+        if asearch.group(1) != bsearch.group(1):
+            return False
+
+    return True
+
+
+def check_important_messages(a, b):
+    SIGNALED_REGEX = [
+        ".+terminated by signal ([0-9]+).+",
+        ".+suspended by signal ([0-9]+).+",
+    ]
+    JOB_CONTROL_REGEX = ["\[([0-9])\].+"]
+    TERMINATED_REGEX = [".+terminated with exit status ([0-9]+).+"]
+
+    return (
+        regex_match(SIGNALED_REGEX, a, b)
+        and regex_match(JOB_CONTROL_REGEX, a, b)
+        and regex_match(TERMINATED_REGEX, a, b)
+    )
+
+
+def strip_whitespace(str):
+    return "".join(str.split())
+
+
+def strip_numeric_chars(str):
+    return "".join(s for s in str if not s.isdigit())
+
+
+def strip_shell_names(str):
+    tokens = []
+
+    for token in str.split():
+        """
+        Cases:
+            1. ./cs0330_noprompt_shell_2_demo (contains)
+            2. cs0330_nopro (startswith)
+        """
+        if not any(
+            token.startswith(shell) or (shell in token) for shell in SHELL_DICT.values()
+        ):
+            tokens.append(token)
+
+    return " ".join(tokens)
+
+
+def check_trace_output_is_equal(a, b):
+    atokens = strip_whitespace(strip_numeric_chars(strip_shell_names(a)))
+    btokens = strip_whitespace(strip_numeric_chars(strip_shell_names(b)))
+
+    return atokens == btokens
+
+
+def check_trace_passed(student: TraceProcessResult, ta: TraceProcessResult) -> bool:
+
+    student_output = student.stdout.decode()
+    ta_output = ta.stdout.decode()
+
+    student_lines = student_output.splitlines()
+    ta_lines = ta_output.splitlines()
+
+    if len(student_lines) != len(ta_lines):
+        return False
+
+    for student_line, ta_line in zip(student_lines, ta_lines):
+        if not check_important_messages(student_line, ta_line):
+            # print(ta_line, student_line)
+            return False
+
+    return check_trace_output_is_equal(student_output, ta_output)
+
+
+@dataclass
+class Trace:
+    number: int
+    path: pathlib.Path
+    lines: List[str]
+    instructions: List[TraceInstruction]
+    is_sequential: Optional[bool] = False
+    thread: Optional[threading.Thread] = None
+    result: Optional[TraceResult] = None
+
+    # "How to Run" Variables:
+
+    def run_trace(self, harness, shell, tmp_dir) -> TraceResult:
+        # print("Popen: " + str([harness, shell]))
+
+        harness_path = str(pathlib.Path(harness).resolve())
+        shell_path = str(pathlib.Path(shell).resolve())
+        shell_proc = subprocess.Popen(
+            [harness_path, shell_path],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=tmp_dir,
+        )
+        time.sleep(0.2)
+
+        for instruction in self.instructions:
+            instruction.run(shell_proc)
+            time.sleep(0.05)
+
+        timedout = False
+        try:
+            stdout, stderr = shell_proc.communicate(timeout=self.get_timeout())
+            # print(stdout, stderr)
+        except subprocess.TimeoutExpired:
+            shell_proc.kill()
+            timedout = True
+            stdout, stderr = shell_proc.communicate()
+
+        return TraceProcessResult(
+            timedout=timedout, stdout=stdout, stderr=stderr, proc=shell_proc
+        )
+
+    def get_timeout(self):
+        if self.number == 11:
+            return 45
+        return 15
+
+    def run_sequential(self, harness, student_shell, ta_shell, tmp_dir):
+        student_result = self.run_trace(harness, student_shell, tmp_dir)
+        time.sleep(0.2)
+        ta_result = self.run_trace(harness, ta_shell, tmp_dir)
+        passed = check_trace_passed(student_result, ta_result)
+
+        self.result = TraceResult(
+            passed=passed,
+            trace=self,
+            trace_input="".join(self.lines),
+            student_result=student_result,
+            ta_result=ta_result,
+        )
+
+    def join_trace(self):
+        self.thread and self.thread.join()
+
+    def run_parallel(self, harness, student_shell, ta_shell, tmp_dir):
+        self.thread = threading.Thread(
+            target=self.run_sequential,
+            args=(harness, student_shell, ta_shell, tmp_dir),
+        )
+        self.thread.start()
+
+
+def extract_trace_number(file: str) -> Union[None, int]:
+    trace_file_regex = re.compile("trace(\d+).txt")
+
+    result = trace_file_regex.search(file)
+    if result:
+        return int(result.group(1))
+    return None
+
+
+def load_traces(args) -> List[Trace]:
+    path = args.suite
+    potential_trace_paths = [
+        path for path in pathlib.Path(path).glob("traces/trace*.txt")
+    ]
+
+    traces = []
+    for path in potential_trace_paths:
+        trace_num = extract_trace_number(path.name)
+        lines, instructions, is_sequential = parse_trace_file(path, args)
+
+        if trace_num:
+            traces.append(
+                Trace(
+                    number=trace_num,
+                    path=path,
+                    lines=lines,
+                    instructions=instructions,
+                    is_sequential=is_sequential,
+                )
+            )
+
+    return {t.number: t for t in traces}
+
+
+def parse_trace_selection(
+    traces_to_run: Union[None, str], traces: Dict[int, Trace]
+) -> List[Trace]:
+    """
+    Parses a string like: "1,3,7,10-12" into the traces [1, 3, 7, 10, 11, 12]
+    """
+    if traces_to_run is None:
+        return traces.values()
+
+    trace_selection = {}
+    tokens = traces_to_run.split(",")
+
+    max_trace = max(traces.keys())
+    try:
+        for token in tokens:
+            subtokens = token.split("-")
+            if len(subtokens) == 1:
+                t = int(subtokens[0])
+                if t in traces:
+                    trace_selection[t] = traces[t]
+            elif len(subtokens) == 2:
+                a = int(subtokens[0])
+                b = int(subtokens[1])
+                start = min(a, b)
+                stop = min(max(a, b), max_trace) + 1
+                for t in range(start, stop):
+                    if t in traces:
+                        trace_selection[t] = traces[t]
+            else:
+                raise Exception(
+                    "Invalid selection string, use a string of the format: 1,3,5,7-12"
+                )
+    except ValueError:
+        raise Exception(
+            "Invalid selection string, use a string of the format: 1,3,5,7-12"
+        )
+
+    return trace_selection.values()
+
+
+def run_traces_sequential(traces, args, tmp_dir):
+    all_passed = True
+    for trace in traces:
+        if not args.verbose:
+            print(f"Running trace {trace.number}: ", end="", flush=True)
+
+        trace.run_sequential(args.harness, args.shell, args.ta_shell, tmp_dir)
+        all_passed &= trace.result.passed
+
+        if args.verbose:
+            print(trace.result.get_verbose_report())
+        else:
+            print(trace.result.get_verdict())
+
+    return all_passed
+
+
+def run_traces_parallel(traces, args, tmp_dir):
+    all_passed = True
+    # Start (non-sequential) traces in background
+    for trace in traces:
+        if not trace.is_sequential:
+            trace.run_parallel(args.harness, args.shell, args.ta_shell, tmp_dir)
+
+    # Print info and Join (non-sequential) traces
+    for trace in traces:
+        if trace.is_sequential:
+            print(f"Skipped trace {trace.number}: [Sequential trace to be run at end]")
+        else:
+            trace.join_trace()
+            all_passed &= trace.result.passed
+            print(f"Ran trace {trace.number}: {trace.result.get_verdict()}")
+            # print(trace.result.get_verbose_report())
+    # Run sequential traces
+    all_passed &= run_traces_sequential(
+        [trace for trace in traces if trace.is_sequential], args, tmp_dir
+    )
+
+    return all_passed
+
+
+def get_args(parser: argparse.ArgumentParser):
+    parser.add_argument(
+        "-s",
+        "--shell",
+        help="shell to run against demo",
+        dest="shell",
+        default="./33noprompt",
+    )
+    parser.add_argument(
+        "-v", "--verbose", help="verbose", action="store_true", dest="verbose"
+    )
+    parser.add_argument(
+        "-u",
+        "--suite",
+        help="suite location",
+        dest="suite",
+        default="./shell_2_tests",
+    )
+    parser.add_argument(
+        "-p", "--parallel", help="run in parallel", action="store_true", dest="parallel"
+    )
+    parser.add_argument(
+        "--ta-shell",
+        help="TA shell, defaults to ./cs0330_noprompt_shell_2_demo",
+        default="./cs0330_noprompt_shell_2_demo",
+        dest="ta_shell",
+    )
+    parser.add_argument(
+        "--harness",
+        default="./cs0330_shell_2_harness",
+        # Don't change this unless you know what you're doing
+        help=argparse.SUPPRESS,
+        dest="harness",
+    )
+    parser.add_argument(
+        "-t",
+        "--traces",
+        help="specific traces to run (e.g. 1,3,10-12), defaults to ALL traces",
+        dest="trace_selection",
+    )
+    return parser.parse_args()
+
+
+def main():
+    args = get_args(argparse.ArgumentParser())
+    traces = load_traces(args)
+
+    if not len(traces):
+        print("No traces found!", file=sys.stderr)
+        sys.exit(1)
+
+    if not args.shell:
+        print("Error: shell not specified\n For help, run with -h", file=sys.stderr)
+        sys.exit(1)
+
+    shell_path = pathlib.Path(args.shell)
+    ta_shell_path = pathlib.Path(args.ta_shell)
+
+    if shell_path.exists() != True:
+        print("shell does not exist!", file=sys.stderr)
+        sys.exit(1)
+
+    if ta_shell_path.exists() != True:
+        print("ta shell does not exist!", file=sys.stderr)
+        sys.exit(1)
+
+    SHELL_DICT = {
+        pathlib.Path(args.shell).name,
+        pathlib.Path(args.ta_shell).name,
+    }
+
+    try:
+        traces_to_run = parse_trace_selection(args.trace_selection, traces)
+    except Exception as e:
+        print(e, file=sys.stderr)
+        sys.exit(1)
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        traces_to_run = sorted(traces_to_run, key=lambda t: t.number)
+        if args.parallel:
+            all_passed = run_traces_parallel(traces_to_run, args, tmp_dir)
+        else:
+            all_passed = run_traces_sequential(traces_to_run, args, tmp_dir)
+
+    if all_passed:
+        sys.exit(0)
+    else:
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

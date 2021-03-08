@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [[ -e 33tmp_file.txt ]]; then
+	rm 33tmp_file.txt
+fi
+cat > exist_script << "EXIST"
+#!/bin/bash
+if [[ -e 33tmp_file.txt ]]; then
+	echo "exists"
+else
+	echo "doesn't exist"
+fi
+EXIST
+
+chmod 777 exist_script

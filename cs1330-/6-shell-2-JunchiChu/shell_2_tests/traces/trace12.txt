@@ -1,0 +1,9 @@
+#
+# trace12.txt - Background jobs print JID and PID
+#
+/bin/echo $SUITE/programs/myspin 1 [bg]
+$SUITE/programs/myspin 1 &
+
+/bin/echo $SUITE/programs/myspin 1 [bg]
+$SUITE/programs/myspin 1 &
+

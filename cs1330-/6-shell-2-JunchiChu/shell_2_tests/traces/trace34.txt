@@ -1,0 +1,16 @@
+#
+# trace34.txt - run multiple jobs, such that if the return value
+#               of waitpid is not checked (for zero) then jobs
+#               will be erroneously removed from the list
+#
+
+/bin/sleep 4 &
+/bin/sleep 30 &
+
+/bin/echo Jobs: expect two sleep processes
+jobs
+
+SLEEP 5
+
+/bin/echo Jobs: expect one sleep process
+jobs

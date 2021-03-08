@@ -1,0 +1,12 @@
+#
+# trace41.txt - waitpid after "fg", sigcont_ignore
+#
+
+$SUITE/programs/delay 4 $SUITE/programs/segfault
+TSTP
+jobs
+
+SLEEP 1
+fg %1
+SLEEP 4
+jobs

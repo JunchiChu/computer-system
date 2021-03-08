@@ -1,0 +1,6 @@
+#!/bin/bash
+
+STR="cs0330 shell 1 append test"
+echo $STR > $1/output
+echo $STR > redirect.txt
+cal >> $1/output

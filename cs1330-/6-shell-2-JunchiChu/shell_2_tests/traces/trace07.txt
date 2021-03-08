@@ -1,0 +1,10 @@
+#
+# trace07.txt - Forward SIGTSTP to every process in foreground process group
+#
+$SUITE/programs/mysplit 4 
+
+SLEEP 2
+TSTP
+
+/bin/echo bin/ps -o pid,tty,stat,time,command
+/bin/ps -o pid,tty,stat,time,command

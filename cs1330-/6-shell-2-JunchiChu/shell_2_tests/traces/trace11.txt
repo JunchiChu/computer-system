@@ -1,0 +1,7 @@
+#
+# trace11.txt - Not every job is run in the background
+#
+$SUITE/programs/delayed_echo 10 "how are you" &
+$SUITE/programs/delayed_echo 8 "hello"
+$SUITE/programs/delayed_echo 5 "goodbye" &
+SLEEP 15

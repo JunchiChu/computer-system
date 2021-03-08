@@ -1,0 +1,14 @@
+#
+# trace01.txt - shell does not exit if SIGINT is received when
+#               there is no foreground job
+#
+
+/bin/echo "hello"
+
+SLEEP 1
+
+INT
+
+SLEEP 1
+
+/bin/echo "goodbye"

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+cp $(dirname "$0")/food $1/
+cp $(dirname "$0")/food.txt $1/
+
+ls > $1/output
+/bin/pwd >> $1/output
+$(dirname "$0")/food >> $1/output

@@ -1,0 +1,145 @@
+#!/usr/bin/env python2.7
+
+import sys
+import subprocess
+import re
+
+
+input_file_path = "test_input.txt"
+output_file_path = "test_output.txt"
+
+size_regex_string = r"\{size=([0-9]+)\}"
+words_regex_string = r"\"(\w+)\""
+errors_regex_string = r"([0-9]+) errors"
+
+"""Get size and words from given line as a tuple"""
+
+
+def get_student_answer_info(line):
+    line_size_search = re.search(size_regex_string, line)
+    if line_size_search is None:
+        return (-1, [])
+    line_size = int(line_size_search.group(1))
+
+    line_words = re.findall(words_regex_string, line)
+    return (line_size, line_words)
+
+
+"""Given the actual answer and the student answer, verifies they match"""
+
+
+def verify_line(input_line, output_line, output_value):
+    return_val = 0
+    print("Testing command: " + input_line)
+    output_parts = output_line.split(":")
+    output_expected_size = int(output_parts[0])
+    output_expected_list_string = output_parts[1]
+    output_expected_list = output_expected_list_string.split(",")
+    # if should be empty list, ensure splitting of result is also empty. By default, will have just empty string
+    if len(output_expected_list) == 1 and output_expected_list[0] == "":
+        output_expected_list = []
+
+    output_value_info = get_student_answer_info(output_value)
+    output_value_size = output_value_info[0]
+    output_value_list = output_value_info[1]
+    if output_value_size < 0:
+        print("*FAILED: Could not find line size in '" + output_value + "'")
+        return_val = 1
+    if output_value_size != output_expected_size:
+        return_val = 1
+        print("*FAILED: List had size " + str(output_value_size) +
+              ", but expected size " + str(output_expected_size))
+
+    # check lists, providing actual list size matches
+    list_match_bool = True
+    if len(output_value_list) == len(output_expected_list):
+        for actual, expected in zip(output_value_list, output_expected_list):
+            if actual != expected:
+                list_match_bool = False
+    else:
+        list_match_bool = False
+
+    if not list_match_bool:
+        return_val = 1
+        print("*FAILED: List is [" + ",".join(output_value_list) +
+              "], but expected [" + ",".join(output_expected_list) + "]")
+
+    # and print a new line if a fail was printed
+    if return_val == 1:
+        print()
+
+    return return_val
+
+
+def testAlloc():
+    passed = 0
+
+    # make the subprocess and get everything that is printed to standard out
+    input_file = open(input_file_path, "r")
+    proc = subprocess.Popen(["./tester"],
+                            stdin=input_file, stdout=subprocess.PIPE)
+    output_bytes = proc.communicate()[0]
+    output = output_bytes.decode("UTF-8", 'replace')
+    output_lines = output.split("\n")
+    output_line_len = len(output_lines)
+    input_file.close()
+
+    # verify first line has size 0 and empty list
+    passed = verify_line(
+        "./tester (ensure starts with size 0 and empty list)", "0:", "{size=0} []")
+
+    # keep track of output_line. First 3 lines will not have size/list since they are checked above
+    line_counter = 3
+    with open(input_file_path, "r") as input_file, open(output_file_path, "r") as output_file:
+        for input_line, output_line in zip(input_file, output_file):
+            # strip new lines from input and output
+            output_line = output_line.strip("\n")
+            input_line = input_line.strip("\n")
+
+            # find the next line that starts with {size= (or > {size= in case of x)
+            start_string = "{size="
+            if input_line == "x":
+                start_string = "> {size="
+            while not output_lines[line_counter].startswith(start_string):
+                line_counter += 1
+                if line_counter >= output_line_len:
+                    print(
+                        "FAILED: cannot find output list for input: " + str(input_line))
+                    sys.exit(1)
+
+            # and verify the line
+            line_passed = verify_line(
+                input_line, output_line, output_lines[line_counter])
+            line_counter += 1
+
+            # if a single line failed, entire program fails
+            if line_passed == 1:
+                passed = 1
+
+    # lastly, run with valgrind and get its output
+    with open(input_file_path, "r") as input_file:
+        valproc = subprocess.Popen(["valgrind", "--leak-check=full", "./tester"],
+                                   stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        valoutput_bytes = valproc.communicate()[1]
+        valoutput = valoutput_bytes.decode("UTF-8")
+        valoutput_lines = valoutput.split("\n")
+        # - 2 cause last is new line
+        last_line = valoutput_lines[len(valoutput_lines) - 2]
+        num_match = re.search(errors_regex_string, last_line)
+        num_errors = str(num_match.group(1))
+        if num_errors == "0":
+            print("Memory check = 0 errors!")
+        else:
+            print("Memory check = " + num_errors +
+                  " errors. Please run './tester' compiled with Address sanitizers for more information.")
+            passed = 1
+
+    return(passed)
+
+
+def main():
+    return testAlloc()
+
+
+if __name__ == "__main__":
+    main()

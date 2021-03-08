@@ -1,0 +1,4 @@
+#!/bin/bash
+
+cp $(dirname "$0")/othello.txt ./othello.txt
+echo "cs0330 shell 1 append test" > redirect.txt

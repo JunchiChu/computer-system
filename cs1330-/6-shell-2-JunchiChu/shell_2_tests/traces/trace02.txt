@@ -1,0 +1,14 @@
+#
+# trace02.txt - shell does not stop if SIGTSTP is received when
+#               there is no foreground job
+#
+
+/bin/echo "hello"
+
+SLEEP 1
+
+TSTP
+
+SLEEP 1
+
+/bin/echo "goodbye"

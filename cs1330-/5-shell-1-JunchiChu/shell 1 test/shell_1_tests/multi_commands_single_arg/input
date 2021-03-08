@@ -1,0 +1,4 @@
+/bin/echo qwerty
+/bin/cat tmp_file.txt
+/usr/bin/banner cs0330
+/bin/echo hi

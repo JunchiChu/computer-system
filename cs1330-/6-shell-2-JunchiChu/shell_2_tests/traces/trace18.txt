@@ -1,0 +1,13 @@
+#
+# trace18.txt - check to see if background jobs are reaped in a loop,
+#               without using the jobs list.
+#
+
+$SUITE/programs/33sh_append_file ./reaptest18.txt $SUITE/programs/mypid 5 &
+$SUITE/programs/33sh_append_file ./reaptest18.txt $SUITE/programs/mypid 5 &
+$SUITE/programs/33sh_append_file ./reaptest18.txt $SUITE/programs/mypid 5 &
+SLEEP 1
+$SUITE/programs/check_process_state ./reaptest18.txt
+SLEEP 5
+$SUITE/programs/check_process_state ./reaptest18.txt
+/bin/rm ./reaptest18.txt

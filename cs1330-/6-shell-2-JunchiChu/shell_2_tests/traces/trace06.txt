@@ -1,0 +1,12 @@
+#
+# trace06.txt - Forward SIGTSTP to foreground job.
+#
+/bin/echo  $SUITE/programs/delayed_echo 4 hello
+$SUITE/programs/delayed_echo 4 "hello"
+
+SLEEP 2
+TSTP
+SLEEP 4
+/bin/echo "goodbye"
+
+# if SIGTSTP is not forwarded then "hello" will print

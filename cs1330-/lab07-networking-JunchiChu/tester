@@ -1,0 +1,113 @@
+#!/usr/bin/env python3.8
+import argparse
+import subprocess
+import sys
+import time
+
+
+def get_args(parser: argparse.ArgumentParser):
+    parser.add_argument(
+        "-i",
+        "--input",
+        help="input file to be sent to server",
+        dest="input_file",
+        default="./tests/input.txt",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        help="output file that contains the expected output from server",
+        dest="output_file",
+        default="./tests/output.txt",
+    )
+    parser.add_argument(
+        "-c",
+        "--client",
+        help="client binary",
+        dest="client",
+        default="./client",
+    )
+    parser.add_argument(
+        "-s",
+        "--server",
+        help="server binary",
+        dest="server",
+        default="./server",
+    )
+    parser.add_argument(
+        "-p",
+        "--port",
+        help="port to run the server on",
+        dest="port",
+        default="5000",
+    )
+    return parser.parse_args()
+
+
+def run_network(args):
+    server_proc = subprocess.Popen(
+        [args.server, args.port], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    client_proc = subprocess.Popen(
+        [args.client, 'localhost', args.port],
+        stdin=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        stdout=subprocess.PIPE)
+
+    with open(args.input_file, "rb") as f:
+        test_string = f.read()
+
+    client_proc.stdin.write(test_string)
+    client_proc.stdin.flush()
+
+    time.sleep(2)
+
+    client_proc.stdin.close()
+    server_proc.stdin.close()
+
+    time.sleep(2)
+
+    student_output = client_proc.stderr.read().decode()
+
+    with open(args.output_file, "r") as f:
+        expected_output = f.read()
+
+    if student_output != expected_output:
+        print("EXPECTED:\n", expected_output)
+        print("RECEIVED:\n", student_output)
+        sys.exit(1)
+
+    server_output = server_proc.stderr.read().decode().strip().split("\n")
+    if len(server_output) == 0:
+        print("Server error\n")
+        sys.exit(1)
+
+    last_line = server_output[-1]
+    if last_line != f"processed {len(test_string)} bytes of text from 1 clients.":
+        print("Server didn't recieved all expected bytes.")
+        sys.exit(1)
+
+    print("Passed 🎉")
+    sys.exit(0)
+
+
+def main():
+    args = get_args(argparse.ArgumentParser())
+
+    if not args:
+        print("Usage ./tester -i <input_file> -o <output_file>", file=sys.stderr)
+        sys.exit(1)
+
+    if not args.input_file:
+        print("No input file specified", file=sys.stderr)
+        sys.exit(1)
+
+    if not args.output_file:
+        print("No ouput file specified", file=sys.stderr)
+        sys.exit(1)
+
+    run_network(args)
+
+
+if __name__ == "__main__":
+    main()

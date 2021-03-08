@@ -1,0 +1,3 @@
+#!/bin/bash
+
+echo "cs0330 shell 1 append test" > redirect.txt

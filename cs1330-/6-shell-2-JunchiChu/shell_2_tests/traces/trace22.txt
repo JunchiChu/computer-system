@@ -1,0 +1,9 @@
+#
+# trace22.txt - Forward SIGINT to foreground job, print message
+#
+/bin/echo  $SUITE/programs/delayed_echo 4 do not print
+$SUITE/programs/delayed_echo 4 do not print
+
+SLEEP 2
+INT
+SLEEP 3

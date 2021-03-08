@@ -1,0 +1,15 @@
+#
+# trace25.txt - programs terminated by non-SIGINT/SIGQUIT signals have
+#               the proper signal recorded
+#
+
+/bin/echo running a program that causes a segfault
+$SUITE/programs/segfault
+
+SLEEP 1
+
+/bin/echo a message "terminated by signal 11" should print
+
+/bin/echo JOBS: should be empty
+
+jobs

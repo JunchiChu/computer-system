@@ -1,0 +1,8 @@
+#
+# trace43.txt - Invalid job does not crash shell
+#
+SLEEP 1
+fg %4567
+/bin/echo fgOK
+bg %2342
+/bin/echo bgOK

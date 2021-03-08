@@ -1,0 +1,57 @@
+Part I: Signal Management
+============================================================================
+trace01: send SIGINT with no foreground process
+trace02: send SIGTSTP with no foreground process
+trace03: send SIGQUIT with no foreground process
+trace04: send SIGINT to foreground job
+trace05: send SIGINT to every process in foreground job
+trace06: send SIGTSTP to foreground job
+trace07: send SIGTSTP to every process in foreground job
+trace08: send SIGQUIT to foreground job
+trace09: send SIGQUIT to every process in foreground job
+
+Part II: Multiple Jobs
+============================================================================
+trace10: run a job in the background
+trace11: run multiple, but not all, jobs in the background
+trace12: background jobs print JID and PID
+trace13: background jobs added to jobs list
+trace14: send SIGINT only to foreground job
+trace15: send SIGTSTP only to foreground job
+trace16: send SIGQUIT only to foreground job
+
+Part III: Reaping
+============================================================================
+trace17: single background job is reaped
+trace18: background jobs are reaped in a loop
+trace19: print change in state for jobs suspended in foreground
+trace20: print change in state and clean up jobs
+         terminated by a signal in background
+trace21: print change in state for jobs suspended in background
+trace22: print change in state for jobs terminated by a signal in foreground
+trace23: print change in state for jobs resumed in the background
+trace24: print exit status for background jobs
+trace25: print proper signal that terminates a job
+trace26: print proper signal that stops a job
+trace27: jobs finishing in the foreground never appear in the jobs list
+trace28: jobs finishing in the background are removed from the jobs list
+trace29: jobs terminated by a signal in the foreground
+         do not appear in the list
+trace30: jobs terminated by a signal in the background
+         are removed from the jobs list
+trace31: jobs suspended in the foreground are added
+         to the jobs list as stopped
+trace32: jobs suspended in the background are updated in the jobs list
+trace33: jobs resumed in the background are updated as running
+trace34: triggers a bug where the return value of waitpid is not checked
+
+Part IV: bg and fg
+============================================================================
+trace35: simple bg test
+trace36: bg resumes only the target job
+trace37: bg restarts all processes in a job
+trace38: simple fg test
+trace39: fg resumes only target job
+trace40: fg restarts all processes in a job
+trace41: waitpid after fg prints message if terminated by a signal
+trace42: waitpid after fg uses WUNTRACED and prints suspended message

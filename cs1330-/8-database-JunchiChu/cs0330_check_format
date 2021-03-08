@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Check if files have been formatted with cs0330_reformat
+
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 <file...>"
+    exit 1
+fi
+
+STYLE='{ "BasedOnStyle": "google", "IndentWidth": 4, "DerivePointerAlignment": false, "PointerAlignment": "Right" }'
+
+all_formatted=true
+
+for file in $@; do
+    if ! diff <(cat $file) <(./clang-format "-style=$STYLE" $file) >/dev/null; then
+        echo "$file: not formatted"
+        all_formatted=false
+    fi
+done
+
+if $all_formatted; then
+    echo "Files formatted!"
+else
+    exit 1
+fi

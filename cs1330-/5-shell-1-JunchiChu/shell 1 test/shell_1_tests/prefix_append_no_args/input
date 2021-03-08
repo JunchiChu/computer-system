@@ -1,0 +1,2 @@
+>> redirect.txt /usr/bin/cal
+/bin/cat redirect.txt

@@ -1,0 +1,364 @@
+#!/usr/bin/python2.7
+
+from subprocess import PIPE
+from subprocess import Popen
+from glob import glob
+from getopt import gnu_getopt
+from getopt import GetoptError
+import os
+import fcntl
+import select
+import time
+import signal
+import shutil
+import sys
+import tempfile
+from os import chdir
+
+execsBin = "/course/cs0330/bin/33sh"
+pt_harness = "cs0330_pt_harness"
+
+progFile = "noprompt"
+testInput = "input"
+testOutput = "output"
+testError = "error"
+testPoints = "points"
+testSetup = "setup"
+rubric = "rubric.txt"
+
+# cleans out a directory
+def cleanDir(path):
+    for d in glob(path + "/*"):
+        if os.path.isdir(d):
+            cleanDir(d)
+            os.rmdir(d)
+        else:
+            os.remove(d)
+
+
+# run bash setup script for a test in directory
+def setupDir(path, tpath):
+    saveCWD = os.getcwd()
+    chdir(path)
+    #f = open(playground + "/" + testOutput, "w+")
+    try:
+        shutil.copyfile(tpath + "/" + testOutput, playground + "/" + testOutput)
+    except IOError as e:
+        print("Error copying expected output file:")
+        print(e)
+        sys.exit(1)
+    pid = os.fork()
+    if pid == 0:
+        os.execv(tpath + "/" + testSetup, [tpath + "/" + testSetup, playground + "/"])
+        sys.exit(1)
+    else:
+        os.waitpid(pid, 0)
+
+    chdir(saveCWD)
+
+
+# path should be the full or relative path to this test case
+def runTest(tpath, testname, spath, report_file):
+    tpath = tpath + testname
+    retOut = ""
+    retErr = ""
+    saveCWD = os.getcwd()
+
+    chdir(playground)
+    cleanDir(playground)
+    setupDir(playground, tpath)
+
+    # start shell
+    prog = ""
+    try:
+        if (pseudoterm):
+            prog = Popen([execsBin + "/" + pt_harness, spath],
+                    stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        else:
+          prog = Popen([spath], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    except OSError as e:
+        print("Error executing shell.")
+        print(e)
+        return {testOutput:retOut, testError:retErr}
+
+    try:
+        with open(tpath + "/" + testInput, "r") as tfile: # open infile
+            prev_line = None
+            for line in tfile: # run tests
+                try:
+                    prog.stdin.write(line)
+                    # switching the orders of the next three lines
+		    # so that exit test works.
+                    time.sleep(.2)
+                    if line.strip() == "exit" and prog.poll() == 0:
+                        break
+		    #time.sleep(.2)
+                except IOError as e:
+                    if prog.returncode == None:
+                        print"\nThe shell program exited abnormally."
+                        print "The offending command was: %s" % prev_line
+                    print("Error communicating with shell: " + str(e))
+                    return {testOutput:retOut, testError:retErr}
+                prev_line = line
+    except IOError as e:
+        print("Error opening test input from file " + tpath + "/input.")
+        print(e)
+        return {testOutput:retOut, testError:retErr}
+
+    ret = ["", "", ""]
+    class Alarm(Exception):
+        pass
+    def alarm_handler(signum, frame):
+        raise Alarm
+    signal.signal(signal.SIGALRM, alarm_handler)
+    signal.alarm(6)
+    try:
+        ret = prog.communicate()
+        signal.alarm(0)
+    except Alarm:
+        if (report_file):
+            print("\tTimeout.  Test " + tpath + " failed.")
+            report_file.write("\tTimeout.  Test " + tpath + " failed.\n")
+        else:
+            print("\t\tTimeout. Test " + tpath + " failed.")
+        return {testOutput:"Timeout error", testError:"Timeout error"}
+
+
+
+    retOut, retErr = (ret[0].replace("\r", ""), ret[1].replace("\r", ""))
+    retOut = retOut.strip()
+    retErr = retErr.strip()
+
+    # get output and error expected values
+    try:
+        with open(playground + "/" + testOutput, "r") as ofile:
+            goodOut = ofile.read().strip()
+    except IOError as e:
+        print("Error opening expected output file " + tpath + "/output.")
+        print(e)
+        return {testOutput:retOut, testError:retErr}
+
+    try:
+        with open(tpath + "/" + testError, "r") as efile:
+            goodErr = efile.read().strip()
+    except IOError as e:
+        print("Error opening expected error file " + tpath + "/error.")
+        print(e)
+        return {testOutput:retOut, testError:retErr}
+    # make sure they all match
+
+    out_failure = False
+    err_failure = False
+    msg = "\tTest " + testname + " failed: "
+    if retOut != goodOut:
+        out_failure = True
+        msg += "stdout mismatch"
+    if retErr != goodErr:
+        err_failure = True
+        if out_failure:
+            msg += ", "
+        msg += "stderr mismatch"
+    if not out_failure and not err_failure:
+        return {}
+    else:
+        if display_errors or verbose:
+            print(msg)
+            to_print = ""
+            if out_failure:
+                to_print += "Test: " + testname + "\n"
+                to_print += "----------------------\n"
+                to_print += "---Expected stdout:---\n"
+                to_print += goodOut + "\n"
+                to_print += "----------------------\n\n"
+                to_print += "---Received stdout:---\n"
+                to_print += retOut + "\n"
+                to_print += "----------------------\n"
+            if err_failure:
+                if not out_failure:
+                    to_print += "Test: " + testname + "\n"
+                    to_print += "----------------------\n"
+                to_print += "---Expected stderr:---\n"
+                to_print += goodErr + "\n"
+                to_print += "----------------------\n\n"
+                to_print += "---Received stderr:---\n"
+                to_print += retErr + "\n"
+                to_print += "----------------------\n"
+            if out_failure or err_failure:
+                to_print += "\n\n"
+            if report:
+                report_file.write(to_print)
+            else:
+                print(to_print)
+
+        return {testOutput:retOut, testError:retErr}
+
+
+def testStudent(spath, report_path):
+    os.chdir(playground)
+    results = {}
+
+    try:
+        report_file = ""
+        if (report):
+            report_file = open(report_path, "w")
+
+
+        tlist = os.listdir(testSuite + "/")
+        for test in tlist:
+            if verbose:
+                print("\tRunning test " + test)
+            results[test] = runTest(testSuite + "/", test, spath, report_file)
+
+        scores = {} # dictionary of scores
+        for test in tlist:
+            with open(testSuite + "/" + test + "/" + testPoints, "r") as f:
+                try:
+                    scores[test] = int(f.read());
+                except IOError:
+                    if verbose:
+                        print("Test value undefined.")
+                    scores[test] = 0
+
+        totScore = 0
+        totPossible = 0
+        if (report_file):
+            report_file.write("Report:\n")
+        else:
+            print("Report:")
+        for test, val in results.items():
+            totPossible += scores[test]
+            if not val:
+                if (report_file):
+                    report_file.write(test + ": Passed (" + str(scores[test]) + "/" + str(scores[test]) + ")\n")
+                else:
+                    print "\t" + test + ": Passed (" + str(scores[test]) + "/" + str(scores[test]) + ")"
+                totScore += scores[test]
+            else:
+                if (report_file):
+                    report_file.write(test + ": Failed (0/" + str(scores[test]) + ")\n")
+                else:
+                    print "\t" + test + ": Failed (0/" + str(scores[test]) + ")"
+
+        if (report_file):
+            report_file.write("--------------------\n")
+            report_file.write("Total: "+str(totScore)+"/"+str(totPossible) + "\n")
+        else:
+            print("--------------------")
+            print("Total: "+str(totScore)+"/"+str(totPossible))
+            # TODO: remove this line if not using rubric from Fall 2019
+            print("Functionality Score [for TAs]: "+str(((float(totScore) / totPossible) * 60) // 1))
+            print "\n"
+
+        if (report):
+            report_file.close()
+
+        return totScore
+    except IOError as e:
+        print(e)
+        print("I/O error. Tests failed.")
+        return 0
+    except OSError as e:
+        print(e)
+        print("Error executing shell. Tests failed.")
+        return 0
+
+
+def usage():
+    print "Usage:", os.path.basename(__file__), "-s <sh> {-t <test>, -u <suite>} [-r] [-e] [-v] [-h] [-p]"
+
+def help():
+    print "Shell Autotester"
+    print "----------------"
+    print "\t[-t, --test] <dir>: use test located in directory <dir>"
+    print "\t[-u, --suite] <dir>: run all tests located in directory <dir>"
+    print "\t[-s, --shell] <sh>: test the indicated sh executable <sh>"
+    print "\t\tTo pass any tests, <sh> must print only program output."
+    print "\t[-r, --report] <file>: generate report in the file <file>"
+    print "\t[-v, --verbose]: print each test to stdout as it is run."
+    print "\t[-e, --errors]: display failing tests as they are run."
+    print "\t[-p, --pseudoterm]: run tests in the pseudoterminal harness"
+    print "\t[-h, --help]: display this message and exit."
+
+
+#########################
+# Starting Main Body... #
+#########################
+
+test = ""
+testSuite = ""
+playground = ""
+executable = ""
+display_errors = False
+verbose = False
+pseudoterm = False
+report = ""
+
+try:
+    opts, args = gnu_getopt(sys.argv[1:], "t:u:s:r:pevh",
+            ["test=", "suite=", "shell=", "report=", "verbose", "errors", "pseudoterm", "help"])
+except GetoptError as err:
+    print str(err)
+    usage()
+    sys.exit(2)
+for opt, val in opts:
+    if opt in ("-t", "--test"):
+        test = val
+    elif opt in ("-u", "--suite"):
+        testSuite = val
+    elif opt in ("-s", "--shell"):
+        executable = val
+    elif opt in ("-r", "--report"):
+        report = val
+    elif opt in ("-e", "--errors"):
+        display_errors = True
+    elif opt in ("-v", "--verbose"):
+        verbose = True
+    elif opt in ("-p", "--pseudoterm"):
+        pseudoterm = True
+    elif opt in ("-h", "--help"):
+        help()
+        sys.exit(0)
+    else:
+        print "Impossible option has been assigned. Exiting."
+        sys.exit(1)
+
+# Make sure all required options have been supplied
+if not test and not testSuite:
+    print("Either test or test suite (-t or -u) required but not found.")
+    usage()
+    sys.exit(1)
+elif test and testSuite:
+    print("Conflicting -t and -u options provided.")
+    usage()
+    sys.exit(1)
+if not playground:
+    playground = tempfile.mkdtemp()
+if not executable:
+    print("Required --shell option unspecified.")
+    usage()
+    sys.exit(1)
+
+# make sure all paths are absolute, for safety's sake.
+# we'll be changing our cwd frequently, and don't want
+# to lose track of the tests or handin.
+assert(executable);
+executable = os.path.abspath(executable)
+if report:
+    report = os.path.abspath(report)
+
+if (test):
+    test = os.path.abspath(test)
+    result = runTest(os.path.dirname(test) + "/", os.path.basename(test),
+            executable, report)
+    if result == {}:
+        print("Test passed.")
+    else:
+        print("Test failed.")
+else:
+    testSuite = os.path.abspath(testSuite)
+    playground = os.path.abspath(playground)
+
+    print("Testing " + executable)
+    testStudent(executable, report)
+
+cleanDir(playground)

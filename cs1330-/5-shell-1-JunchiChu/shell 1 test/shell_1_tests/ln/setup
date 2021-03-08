@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo "cs0330 shell_1 link test" > to_link.txt
+cat to_link.txt > $1/output

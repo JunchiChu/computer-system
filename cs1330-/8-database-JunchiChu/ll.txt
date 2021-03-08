@@ -1,0 +1,173 @@
+(root)
+ (null)
+ russia moscow
+  nicaragua managua
+   jamaica kingston
+    greece athens
+     brazil brasilia
+      algeria algiers
+       albania tirane
+        (null)
+        (null)
+       belize belmopan
+        angola luanda
+         (null)
+         argentina buenos_aires
+          (null)
+          australia canberra
+           (null)
+           belgium brussels
+            austria vienna
+             (null)
+             (null)
+            (null)
+        bolivia sucre
+         (null)
+         (null)
+      costa_rica san_jose
+       canada ottawa
+        (null)
+        colombia bogota
+         china beijing
+          chile santiago
+           (null)
+           (null)
+          (null)
+         (null)
+       ethiopia addis_ababa
+        djibouti djibouti
+         denmark copenhagen
+          cyprus nicosia
+           cuba havana
+            (null)
+            (null)
+           (null)
+          (null)
+         egypt cairo
+          (null)
+          equador quito
+           el_salvador san_salvador
+            (null)
+            (null)
+           (null)
+        germany berlin
+         france paris
+          fiji suva
+           (null)
+           finland helsinki
+            (null)
+            (null)
+          (null)
+         (null)
+     indonesia jakarta
+      honduras tegucigalpa
+       guatemala guatemala_city
+        (null)
+        (null)
+       india new_delhi
+        (null)
+        (null)
+      ireland dublin
+       iraq baghdad
+        iran tehran
+         (null)
+         (null)
+        (null)
+       italy rome
+        israel jerusalem
+         (null)
+         (null)
+        (null)
+    lebannon beirut
+     kenya nairobi
+      japan tokyo
+       (null)
+       (null)
+      kuwait kuwait
+       (null)
+       (null)
+     new_zealand wellington
+      netherlands amsterdam
+       malta valletta
+        malaysia kuala_lumpur
+         luxembourg luxembourg
+          (null)
+          malawi lilongwe
+           (null)
+           (null)
+         mali bamako
+          maldives male
+           (null)
+           (null)
+          (null)
+        mauritania nouakchott
+         (null)
+         mexico mexico_city
+          (null)
+          nepal katmandu
+           namibia windhoek
+            mongolia ulan_bator
+             (null)
+             morocco rabat
+              (null)
+              (null)
+            (null)
+           (null)
+       (null)
+      (null)
+   papua_new_guinea port_moresby
+    norway oslo
+     (null)
+     (null)
+    paraguay asuncion
+     (null)
+     romania bucharest
+      poland warsaw
+       peru lima
+        (null)
+        (null)
+       (null)
+      (null)
+  switzerland bern
+   sri_lanka colombo
+    spain madrid
+     saudi_arabia riyadh
+      san_marino san_marino
+       (null)
+       (null)
+      somalia mogadishu
+       solomon_islands honiara
+        (null)
+        (null)
+       (null)
+     (null)
+    sweden stockholm
+     (null)
+     (null)
+   uk london
+    togo lome
+     tanzania dodoma
+      (null)
+      thailand bangkok
+       (null)
+       (null)
+     tunisia tunis
+      (null)
+      turkey istanbul
+       (null)
+       uganda kampala
+        (null)
+        (null)
+    zaire kinshasa
+     viet_nam hanoi
+      venezuela caracas
+       ukraine kiev
+        (null)
+        usa washington
+         (null)
+         (null)
+       (null)
+      (null)
+     zambia lusaka
+      (null)
+      (null)

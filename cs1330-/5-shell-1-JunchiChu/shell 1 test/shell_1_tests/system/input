@@ -1,0 +1,12 @@
+/bin/ls
+/usr/bin/banner cs0330 shell 1 system test > banner.txt
+/bin/cat banner.txt
+/usr/bin/cal > cal.txt
+< cal.txt /usr/bin/xargs /usr/bin/banner
+ln cal.txt link.txt
+/bin/cat link.txt
+> banner.txt /bin/echo cs0330 shell 1 system test
+>> banner.txt /usr/bin/banner appending
+>> new.txt /bin/echo cs0330 shell 1
+/bin/cat banner.txt
+/bin/cat new.txt

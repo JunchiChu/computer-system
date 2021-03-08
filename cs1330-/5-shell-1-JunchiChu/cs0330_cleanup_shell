@@ -1,0 +1,5 @@
+#! /bin/bash
+
+killall 33noprompt 2> /dev/null
+killall 33sh 2> /dev/null
+echo "All shell processes belonging to you have been quit!"

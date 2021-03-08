@@ -1,0 +1,12 @@
+#
+# trace09.txt - Forward SIGQUIT to every process in foreground process group
+#
+$SUITE/programs/mysplit 6
+
+SLEEP 2
+QUIT
+
+/bin/echo /bin/ps -o pid,tty,stat,time,command
+SLEEP 2
+/bin/ps -o pid,tty,stat,time,command
+

@@ -1,0 +1,13 @@
+#
+# trace33.txt - background jobs resumed without signals sent from the shell
+#
+
+$SUITE/programs/sigcont_n 5
+SLEEP 1
+# should be stopped on the jobs list
+jobs
+
+SLEEP 5
+BLANK
+# should be running on the jobs list. resumed message should print
+jobs

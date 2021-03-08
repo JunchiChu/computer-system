@@ -1,0 +1,11 @@
+#
+# trace20.txt - ensures that jobs terminated by SIGINT in the
+#               background are cleaned up and have the change reported.
+#
+
+$SUITE/programs/33sh_to_file ./reaptest20.txt $SUITE/programs/sigint_n 3 &
+SLEEP 1
+$SUITE/programs/check_process_state ./reaptest20.txt
+SLEEP 3
+$SUITE/programs/check_process_state ./reaptest20.txt
+/bin/rm ./reaptest20.txt

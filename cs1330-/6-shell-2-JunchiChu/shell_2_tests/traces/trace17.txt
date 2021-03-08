@@ -1,0 +1,11 @@
+#
+# trace17.txt - check to see if a background job is reaped,
+#               without using the jobs list.
+#
+
+$SUITE/programs/33sh_to_file ./reaptest17.txt $SUITE/programs/mypid 4 &
+SLEEP 1
+$SUITE/programs/check_process_state ./reaptest17.txt
+SLEEP 4
+$SUITE/programs/check_process_state ./reaptest17.txt
+/bin/rm ./reaptest17.txt

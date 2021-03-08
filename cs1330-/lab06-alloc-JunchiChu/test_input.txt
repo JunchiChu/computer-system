@@ -1,0 +1,29 @@
+a 1
+a 2
+a 3
+a test
+a 5
+x
+a e
+a 1
+x
+fa addme
+r evince
+r penny
+i first 0
+r first
+a last
+r last
+r nickel
+r dime
+r quarter
+r powerpoint
+r word
+r excel
+r okular
+r xpdf
+r acroread
+r outlook
+fa addme2
+fr addme2
+quit

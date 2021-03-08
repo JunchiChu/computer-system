@@ -1,0 +1,9 @@
+#
+# trace10.txt - Run a background job, in the background
+#
+$SUITE/programs/delayed_echo 5 "goodbye" &
+
+SLEEP 1
+
+/bin/echo "hello"
+SLEEP 5

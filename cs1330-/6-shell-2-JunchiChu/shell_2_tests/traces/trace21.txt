@@ -1,0 +1,9 @@
+#
+# trace21.txt - ensures that jobs suspended by SIGTSTP in the
+#               background have their change in state recorded
+#
+
+$SUITE/programs/33sh_to_file /dev/null $SUITE/programs/sigtstp_n 1 &
+
+SLEEP 2
+BLANK
