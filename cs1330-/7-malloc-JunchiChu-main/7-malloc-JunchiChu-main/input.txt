@@ -1,0 +1,3 @@
+malloc 0 512
+malloc 1 128
+realloc 0 650
